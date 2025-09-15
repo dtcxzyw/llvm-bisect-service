@@ -1,13 +1,15 @@
 import warnings
 import sys
 import os
+import pathlib
+import datetime
+import subprocess
+import tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning, module="fs")
 
 import fs
-import datetime
-import subprocess
-import tqdm
+
 
 WORK_DIR = "./work"
 STORAGE_DIR = os.getenv("LBS_STORAGE_DIR", "./storage")
@@ -78,37 +80,44 @@ def build_and_upload(name: str) -> str:
     subprocess.check_call(
         ["git", "-C", LLVM_DIR, "-c", "advice.detachedHead=false", "checkout", commit]
     )
-    subprocess.check_call(
-        [
-            "cmake",
-            "-S",
-            os.path.join(LLVM_DIR, "llvm"),
-            "-DCMAKE_BUILD_TYPE=MinSizeRel",
-            "-G",
-            "Ninja",
-            "-DLLVM_PARALLEL_LINK_JOBS=4",
-            "-DLLVM_ENABLE_ASSERTIONS=ON",
-            "-DLLVM_ABI_BREAKING_CHECKS=WITH_ASSERTS",
-            "-DLLVM_ENABLE_WARNINGS=OFF",
-            "-DLLVM_APPEND_VC_REV=ON",
-            "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-            "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
-        ],
-        cwd=llvm_build_dir,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    subprocess.check_call(
-        ["cmake", "--build", ".", "-j", str(os.cpu_count()), "-t", target],
-        cwd=llvm_build_dir,
-    )
-    bin_path = os.path.join(llvm_build_dir, "bin", target)
-    upx_path = os.path.join(WORK_DIR, "upx")
-    compressed_path = bin_path + ".upx"
-    subprocess.check_call(
-        [upx_path, "-o", compressed_path, "--lzma", "--best", bin_path]
-    )
-    return compressed_path
+    try:
+        subprocess.check_call(
+            [
+                "cmake",
+                "-S",
+                os.path.join(LLVM_DIR, "llvm"),
+                "-DCMAKE_BUILD_TYPE=MinSizeRel",
+                "-G",
+                "Ninja",
+                "-DLLVM_PARALLEL_LINK_JOBS=4",
+                "-DLLVM_ENABLE_ASSERTIONS=ON",
+                "-DLLVM_ABI_BREAKING_CHECKS=WITH_ASSERTS",
+                "-DLLVM_ENABLE_WARNINGS=OFF",
+                "-DLLVM_APPEND_VC_REV=ON",
+                "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+                "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
+            ],
+            cwd=llvm_build_dir,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        subprocess.check_call(
+            ["cmake", "--build", ".", "-j", str(os.cpu_count()), "-t", target],
+            cwd=llvm_build_dir,
+        )
+        bin_path = os.path.join(llvm_build_dir, "bin", target)
+        upx_path = os.path.join(WORK_DIR, "upx")
+        compressed_path = bin_path + ".upx"
+        if os.path.exists(compressed_path):
+            os.remove(compressed_path)
+        subprocess.check_call(
+            [upx_path, "-o", compressed_path, "--lzma", "--best", bin_path]
+        )
+        return compressed_path
+    except subprocess.CalledProcessError:
+        dummy_path = os.path.join(WORK_DIR, "dummy")
+        pathlib.Path(dummy_path).touch()
+        return dummy_path
 
 
 def producer_iter():
