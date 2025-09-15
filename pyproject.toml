@@ -1,0 +1,11 @@
+[project]
+name = "llvm-bisect-service"
+version = "0.1.0"
+description = "Automatic bisection for LLVM issues"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "dateparser>=1.2.2",
+    "fs-sshfs>=1.0.2",
+    "tqdm>=4.67.1",
+]
