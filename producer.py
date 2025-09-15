@@ -93,7 +93,7 @@ def build_and_upload(name: str) -> str:
                 "-DLLVM_ENABLE_ASSERTIONS=ON",
                 "-DLLVM_ABI_BREAKING_CHECKS=WITH_ASSERTS",
                 "-DLLVM_ENABLE_WARNINGS=OFF",
-                "-DLLVM_APPEND_VC_REV=ON",
+                "-DLLVM_APPEND_VC_REV=OFF",
                 "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
                 "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
             ],
