@@ -12,7 +12,7 @@ import tqdm
 WORK_DIR = "./work"
 STORAGE_DIR = os.getenv("LBS_STORAGE_DIR", "./storage")
 WINDOW_SIZE = int(os.getenv("LBS_WINDOW_SIZE", "30"))
-LLVM_DIR = os.path.join(WORK_DIR, "llvm-project")
+LLVM_DIR = os.path.abspath(os.path.join(WORK_DIR, "llvm-project"))
 
 INTERESTING_DIRS = [
     "llvm/include/llvm/Analysis",
@@ -66,34 +66,40 @@ def list_required_bins():
             if any(file.startswith(prefix) for prefix in INTERESTING_DIRS):
                 tasks.append("opt-" + commit)
                 tasks.append("llc-" + commit)
+                tasks.append("lli-" + commit)
                 break
     return tasks
 
 
-def build_and_upload(name) -> str:
+def build_and_upload(name: str) -> str:
     llvm_build_dir = os.path.join(WORK_DIR, "llvm-build")
     os.makedirs(llvm_build_dir, exist_ok=True)
     target, commit = name.split("-")
-    subprocess.check_call(["git", "-C", LLVM_DIR, "checkout", commit])
+    subprocess.check_call(
+        ["git", "-C", LLVM_DIR, "-c", "advice.detachedHead=false", "checkout", commit]
+    )
     subprocess.check_call(
         [
             "cmake",
-            LLVM_DIR,
+            "-S",
+            os.path.join(LLVM_DIR, "llvm"),
             "-DCMAKE_BUILD_TYPE=MinSizeRel",
             "-G",
             "Ninja",
             "-DLLVM_PARALLEL_LINK_JOBS=4",
             "-DLLVM_ENABLE_ASSERTIONS=ON",
-            "-DLLVM_ABI_BREAKING_CHECKS=FORCE_OFF",
+            "-DLLVM_ABI_BREAKING_CHECKS=WITH_ASSERTS",
             "-DLLVM_ENABLE_WARNINGS=OFF",
-            "-DLLVM_APPEND_VC_REV=OFF",
+            "-DLLVM_APPEND_VC_REV=ON",
             "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
             "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
         ],
         cwd=llvm_build_dir,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
     )
     subprocess.check_call(
-        ["cmake", "--build", ".", "-j", os.cpu_count(), "-t", target],
+        ["cmake", "--build", ".", "-j", str(os.cpu_count()), "-t", target],
         cwd=llvm_build_dir,
     )
     bin_path = os.path.join(llvm_build_dir, "bin", target)
@@ -107,6 +113,7 @@ def build_and_upload(name) -> str:
 
 def producer_iter():
     storage = fs.open_fs(STORAGE_DIR, writeable=True, create=True)
+    subprocess.check_call(["git", "-C", LLVM_DIR, "checkout", "main"])
     subprocess.check_call(["git", "-C", LLVM_DIR, "pull", "origin", "main"])
     requested_bins = list_required_bins()
     available_bins = storage.listdir(".")
@@ -115,7 +122,7 @@ def producer_iter():
     for name in progress:
         progress.set_description(f"Building {name}")
         src_bin = build_and_upload(name)
-        with open(src_bin, 'rb') as bin_file:
+        with open(src_bin, "rb") as bin_file:
             storage.upload(name, bin_file)
 
 
