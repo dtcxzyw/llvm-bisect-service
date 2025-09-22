@@ -1,6 +1,7 @@
 import sys
 import warnings
 import os
+import subprocess
 
 warnings.filterwarnings("ignore", category=UserWarning, module="fs")
 
@@ -18,12 +19,42 @@ def local_provider(commit_id, binary, output) -> bool:
     except Exception:
         return False
 
+MANYCLANGS_LOCAL = os.getenv("LBS_MANYCLANGS_LOCAL")
+ELFSHAKER_BIN = os.getenv("LBS_ELFSHAKER_BIN")
+LLVM_REPO = os.getenv("LBS_LLVM_REPO")
+
+def manyclangs_provider(commit_id, binary, output) -> bool:
+    try:
+        sha = subprocess.check_output(["git", "rev-parse", "--short=10", commit_id], cwd=LLVM_REPO).decode().strip()
+        out = subprocess.check_output([ELFSHAKER_BIN, "find", sha], cwd=MANYCLANGS_LOCAL).decode().strip()
+        if out == "":
+            return False
+        snapshot, pack = out.split()
+        subprocess.check_call([ELFSHAKER_BIN, "extract", f"{pack}:{snapshot}"], cwd=MANYCLANGS_LOCAL)
+        env = os.environ.copy()
+        env["LINKSCRIPT_LLD"] = "lld"
+        env["LINKSCRIPT_CXX"] = "clang++ -target aarch64-linux-gnu"
+        env["LINKSCRIPT_CC"] = "clang -target aarch64-linux-gnu"
+        subprocess.check_call(["/usr/bin/bash", "link.sh", binary], cwd=MANYCLANGS_LOCAL, env=env)
+        binary_path = os.path.join(MANYCLANGS_LOCAL, "bin", binary)
+        with open(output, "w") as f:
+            f.write(f"#!/usr/bin/bash\nqemu-aarch64 -L /usr/aarch64-linux-gnu/ {binary_path} \"$@\"\n")
+        os.chmod(output, 0o755)
+    except Exception:
+        return False
+
 if __name__ == "__main__":
     commit_id = sys.argv[1]
     binary = sys.argv[2]
     output = sys.argv[3]
 
+    if os.path.exists(output):
+        os.remove(output)
+
     if local_provider(commit_id, binary, output):
+        exit(0)
+
+    if manyclangs_provider(commit_id, binary, output):
         exit(0)
 
     exit(1)
