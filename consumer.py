@@ -32,7 +32,7 @@ def manyclangs_provider(commit_id, binary, output) -> bool:
         if out == "":
             return False
         snapshot, pack = out.split()
-        subprocess.check_call([ELFSHAKER_BIN, "extract", f"{pack}:{snapshot}"], cwd=MANYCLANGS_LOCAL)
+        subprocess.check_call([ELFSHAKER_BIN, "extract", f"{pack}:{snapshot}", "--reset"], cwd=MANYCLANGS_LOCAL)
         env = os.environ.copy()
         env["LINKSCRIPT_LLD"] = "lld"
         env["LINKSCRIPT_CXX"] = "clang++ -target aarch64-linux-gnu"
@@ -42,6 +42,7 @@ def manyclangs_provider(commit_id, binary, output) -> bool:
         with open(output, "w") as f:
             f.write(f"#!/usr/bin/bash\nqemu-aarch64 -L /usr/aarch64-linux-gnu/ {binary_path} \"$@\"\n")
         os.chmod(output, 0o755)
+        return True
     except Exception:
         return False
 
