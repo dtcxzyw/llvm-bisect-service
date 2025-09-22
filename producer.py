@@ -104,6 +104,7 @@ def build_and_upload(name: str) -> str:
         subprocess.check_call(
             ["cmake", "--build", ".", "-j", str(os.cpu_count()), "-t", target],
             cwd=llvm_build_dir,
+            timeout=3600,
         )
         bin_path = os.path.join(llvm_build_dir, "bin", target)
         upx_path = os.path.join(WORK_DIR, "upx")
