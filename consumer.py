@@ -27,6 +27,9 @@ LLVM_REPO = os.getenv("LBS_LLVM_REPO")
 
 def manyclangs_provider(commit_id, binary, output) -> bool:
     try:
+        binary_path = os.path.join(MANYCLANGS_LOCAL, "bin", binary)
+        if os.path.exists(binary_path):
+            os.remove(binary_path)
         sha = subprocess.check_output(["git", "rev-parse", "--short=10", commit_id], cwd=LLVM_REPO).decode().strip()
         out = subprocess.check_output([ELFSHAKER_BIN, "find", sha], cwd=MANYCLANGS_LOCAL).decode().strip()
         if out == "":
@@ -38,7 +41,6 @@ def manyclangs_provider(commit_id, binary, output) -> bool:
         env["LINKSCRIPT_CXX"] = "clang++ -target aarch64-linux-gnu"
         env["LINKSCRIPT_CC"] = "clang -target aarch64-linux-gnu"
         subprocess.check_call(["/usr/bin/bash", "link.sh", binary], cwd=MANYCLANGS_LOCAL, env=env)
-        binary_path = os.path.join(MANYCLANGS_LOCAL, "bin", binary)
         with open(output, "w") as f:
             f.write(f"#!/usr/bin/bash\nqemu-aarch64 -L /usr/aarch64-linux-gnu/ {binary_path} \"$@\"\n")
         os.chmod(output, 0o755)
