@@ -4,6 +4,7 @@ import os
 import pathlib
 import datetime
 import subprocess
+import time
 import tqdm
 
 warnings.filterwarnings("ignore", category=UserWarning, module="fs")
@@ -151,6 +152,7 @@ def main():
     while True:
         try:
             producer_iter()
+            time.sleep(1200)
         except Exception as e:
             print(f"Error in producer_iter: {e}", file=sys.stderr)
             break
