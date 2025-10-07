@@ -38,6 +38,11 @@ jobs:
           LBS_COMMAND_STRING: ${{ github.event.issue.body }}
           LBS_LLVM_REPO: ${{ github.workspace }}/llvm-project
 
+      - name: Reset bisect state
+        if: ${{ always() }}
+        run: |
+          git -C llvm-project bisect reset || true
+
       - name: Report
         uses: thollander/actions-comment-pull-request@v3
         with:
