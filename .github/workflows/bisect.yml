@@ -43,7 +43,11 @@ jobs:
         run: |
           git -C llvm-project bisect reset || true
 
+      - name: Strip log
+        run: |
+          awk '{lines[NR]=$0} /llvm-bisect-service/{last_match=NR} END{for(i=last_match+1; i<=NR; i++) print lines[i]}' work/log.md >work/log-stripped.md
+
       - name: Report
         uses: thollander/actions-comment-pull-request@v3
         with:
-          file-path: llvm-bisect-service/work/log.md
+          file-path: llvm-bisect-service/work/log-stripped.md

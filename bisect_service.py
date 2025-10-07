@@ -31,11 +31,19 @@ subprocess.check_call(
 )
 bisect_runner_file = "work/oracle.sh"
 work_dir = os.path.abspath("work")
+for binary in ["opt", "llc", "lli"]:
+    if f"./{binary}-exec" in oracle_command:
+        oracle_command = """$LBS_CONSUMER $LBS_COMMIT_SHA {binary} {binary}-exec
+if [ $? -ne 0 ]; then
+    exit 125
+fi""" + oracle_command
+        
 with open(bisect_runner_file, "w") as f:
     f.write(f"""#!/usr/bin/bash
 LBS_CONSUMER={consumer_script}
 cd {work_dir}
 LBS_COMMIT_SHA=$(git -C {llvm_dir} rev-parse BISECT_HEAD)
+echo "[llvm-bisect-service] Running on commit $LBS_COMMIT_SHA"
 {oracle_command}
 """)
 os.chmod(bisect_runner_file, 0o755)
