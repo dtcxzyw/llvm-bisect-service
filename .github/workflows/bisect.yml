@@ -45,6 +45,7 @@ jobs:
 
       - name: Strip log
         run: |
+          cd llvm-bisect-service
           awk '{lines[NR]=$0} /llvm-bisect-service/{last_match=NR} END{for(i=last_match+1; i<=NR; i++) print lines[i]}' work/log.md >work/log-stripped.md
 
       - name: Report
