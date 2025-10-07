@@ -8,7 +8,7 @@ pos1 = command_string.index("```\n")
 pos2 = command_string.index("```\n", pos1 + 4)
 oracle_command = command_string[pos1 + 4 : pos2]
 pos3 = command_string.index("```\n", pos2 + 4)
-pos4 = command_string.index("```\n", pos3 + 4)
+pos4 = command_string.index("```", pos3 + 4)
 input_string = command_string[pos3 + 4 : pos4]
 input_file_path = "work/test.ll"
 with open(input_file_path, "w") as f:
