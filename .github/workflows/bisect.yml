@@ -1,0 +1,41 @@
+name: Bisect
+
+on:
+  issues:
+    types: labeled
+
+jobs:
+  build:
+    if: github.event.label.name == 'bisect'
+    runs-on: [self-hosted]
+
+    permissions:
+      issues: write
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - uses: actions/checkout@v5
+        with:
+          repository: llvm/llvm-project
+          path: llvm-project
+          fetch-depth: 0
+          ref: main
+
+      - name: Run bisection
+        run: |
+          mkdir -p work
+          echo "Unknown error" >work/log.md
+          python3 bisect_service.py >work/log.md 2>&1
+        env:
+          LBS_COMMAND_STRING: ${{ github.event.issue.body }}
+          LBS_LLVM_DIR: ${{ github.workspace }}/llvm-project
+
+      - name: Report
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          file-path: work/log.md
