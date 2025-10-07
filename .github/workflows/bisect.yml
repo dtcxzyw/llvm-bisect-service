@@ -18,12 +18,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
-
-      - name: Cache git folder
-        uses: actions/cache@v4
-        with:
-          path: llvm-project/.git
-          key: git-folder
+          path: llvm-bisect-service
 
       - uses: actions/checkout@v5
         with:
@@ -34,6 +29,7 @@ jobs:
 
       - name: Run bisection
         run: |
+          cd llvm-bisect-service
           mkdir -p work
           echo "Unknown error" >work/log.md
           python3 bisect_service.py 2>&1 | tee work/log.md
@@ -45,4 +41,4 @@ jobs:
       - name: Report
         uses: thollander/actions-comment-pull-request@v3
         with:
-          file-path: work/log.md
+          file-path: llvm-bisect-service/work/log.md
