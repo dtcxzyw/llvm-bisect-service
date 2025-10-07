@@ -32,7 +32,7 @@ jobs:
           cd llvm-bisect-service
           mkdir -p work
           echo "Unknown error" >work/log.md
-          python3 bisect_service.py 2>&1 | tee work/log.md
+          python3 bisect_service.py | tee work/log.md
         continue-on-error: true
         env:
           LBS_COMMAND_STRING: ${{ github.event.issue.body }}
