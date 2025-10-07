@@ -31,6 +31,7 @@ jobs:
           mkdir -p work
           echo "Unknown error" >work/log.md
           python3 bisect_service.py >work/log.md 2>&1
+        continue-on-error: true
         env:
           LBS_COMMAND_STRING: ${{ github.event.issue.body }}
           LBS_LLVM_REPO: ${{ github.workspace }}/llvm-project
