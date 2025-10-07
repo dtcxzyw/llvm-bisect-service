@@ -35,7 +35,7 @@ with open(bisect_runner_file, "w") as f:
     f.write(f"""#!/usr/bin/bash
 LBS_CONSUMER={consumer_script}
 cd {work_dir}
-
+LBS_COMMIT_SHA=$(git -C {llvm_dir} rev-parse BISECT_HEAD)
 {oracle_command}
 """)
 os.chmod(bisect_runner_file, 0o755)
