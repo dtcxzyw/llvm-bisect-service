@@ -16,7 +16,7 @@ with open(input_file_path, "w") as f:
 llvm_dir = os.getenv("LBS_LLVM_REPO")
 consumer_script = os.path.dirname(os.path.abspath(__file__)) + "/consumer.py"
 bad_commit = (
-    subprocess.check_output(["git", "rev-parse", "origin/HEAD"], cwd=llvm_dir)
+    subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=llvm_dir)
     .decode()
     .strip()
 )
