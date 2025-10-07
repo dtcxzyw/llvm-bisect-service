@@ -45,8 +45,7 @@ subprocess.check_call(
         "git",
         "bisect",
         "run",
-        bisect_runner_file,
-        consumer_script,
+        os.path.abspath(bisect_runner_file)
     ],
     cwd=llvm_dir,
     timeout=600.0,
