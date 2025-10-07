@@ -13,7 +13,7 @@ input_string = command_string[pos3 + 4 : pos4]
 input_file_path = "work/test.ll"
 with open(input_file_path, "w") as f:
     f.write(input_string)
-llvm_dir = os.getenv("LBS_LLVM_DIR")
+llvm_dir = os.getenv("LBS_LLVM_REPO")
 consumer_script = os.path.dirname(os.path.abspath(__file__)) + "/consumer.py"
 bad_commit = (
     subprocess.check_output(["git", "rev-parse", "origin/HEAD"], cwd=llvm_dir)

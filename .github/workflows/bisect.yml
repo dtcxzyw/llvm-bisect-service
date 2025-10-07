@@ -33,7 +33,7 @@ jobs:
           python3 bisect_service.py >work/log.md 2>&1
         env:
           LBS_COMMAND_STRING: ${{ github.event.issue.body }}
-          LBS_LLVM_DIR: ${{ github.workspace }}/llvm-project
+          LBS_LLVM_REPO: ${{ github.workspace }}/llvm-project
 
       - name: Report
         uses: thollander/actions-comment-pull-request@v3
