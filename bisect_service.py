@@ -62,7 +62,7 @@ if is_good_commit(bad_commit):
 good_commit = None
 offset = 100
 while offset <= 204800:  # ~5 years
-    commit_sha = subprocess.check_output(["git", "rev-parse", f"{bad_commit}~{offset}"], cwd=llvm_dir).decode()
+    commit_sha = subprocess.check_output(["git", "rev-parse", f"{bad_commit}~{offset}"], cwd=llvm_dir).decode().strip()
     if is_good_commit(commit_sha):
         good_commit = commit_sha
         break
@@ -70,6 +70,7 @@ while offset <= 204800:  # ~5 years
 if good_commit is None:
     print("Could not find a good commit.")
     exit(1)
+print(f"Bad commit: {bad_commit} Good commit: {good_commit}")
 subprocess.check_call(["git", "bisect", "reset"], cwd=llvm_dir)
 subprocess.check_call(
     ["git", "bisect", "start", "--no-checkout", bad_commit, good_commit], cwd=llvm_dir
