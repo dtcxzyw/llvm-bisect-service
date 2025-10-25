@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 
 os.makedirs("work", exist_ok=True)
@@ -31,6 +30,12 @@ subprocess.check_call(
 )
 bisect_runner_file = "work/oracle.sh"
 work_dir = os.path.abspath("work")
+oracle_command = """
+./opt-exec -passes=verify test.ll >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    exit 125
+fi
+""" + oracle_command
 for binary in ["opt", "llc", "lli"]:
     if f"./{binary}-exec" in oracle_command:
         oracle_command = f"""{consumer_script} $LBS_COMMIT_SHA {binary} {binary}-exec
