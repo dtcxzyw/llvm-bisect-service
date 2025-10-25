@@ -47,7 +47,7 @@ os.chmod(bisect_runner_file, 0o755)
 def is_good_commit(commit: str) -> bool:
     try:
         res = subprocess.run([os.path.abspath(bisect_runner_file), commit], timeout=60, cwd=llvm_dir).returncode
-        return res == 1
+        return res == 0
     except Exception:
         return False
 
