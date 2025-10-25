@@ -1,5 +1,6 @@
 import os
 import subprocess
+from typing import Optional
 
 os.makedirs("work", exist_ok=True)
 command_string = os.getenv("LBS_COMMAND_STRING")
@@ -14,20 +15,6 @@ with open(input_file_path, "w") as f:
     f.write(input_string)
 llvm_dir = os.getenv("LBS_LLVM_REPO")
 consumer_script = os.path.dirname(os.path.abspath(__file__)) + "/consumer.py"
-bad_commit = (
-    subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=llvm_dir)
-    .decode()
-    .strip()
-)
-good_commit = (
-    subprocess.check_output(["git", "rev-parse", bad_commit + "~100000"], cwd=llvm_dir)
-    .decode()
-    .strip()
-)  # ~2 years
-subprocess.check_call(["git", "bisect", "reset"], cwd=llvm_dir)
-subprocess.check_call(
-    ["git", "bisect", "start", "--no-checkout", bad_commit, good_commit], cwd=llvm_dir
-)
 bisect_runner_file = "work/oracle.sh"
 work_dir = os.path.abspath("work")
 oracle_command = """
@@ -47,12 +34,46 @@ fi
 with open(bisect_runner_file, "w") as f:
     f.write(f"""#!/usr/bin/bash
 cd {work_dir}
+if [ $# -eq 1 ]; then
+LBS_COMMIT_SHA="$1"
+else
 LBS_COMMIT_SHA=$(git -C {llvm_dir} rev-parse BISECT_HEAD)
+fi
 echo "[llvm-bisect-service] Running on commit $LBS_COMMIT_SHA"
 {oracle_command}
 """)
 os.chmod(bisect_runner_file, 0o755)
 
+def is_good_commit(commit: str) -> bool:
+    try:
+        res = subprocess.run([os.path.abspath(bisect_runner_file), commit], timeout=60, cwd=llvm_dir).returncode
+        return res == 1
+    except Exception:
+        return False
+
+bad_commit = (
+    subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=llvm_dir)
+    .decode()
+    .strip()
+)
+if is_good_commit(bad_commit):
+    print("The test is not interesting.")
+    exit(1)
+good_commit = None
+offset = 100
+while offset <= 204800:  # ~5 years
+    commit_sha = subprocess.check_output(["git", "rev-parse", f"{bad_commit}~{offset}"], cwd=llvm_dir).decode()
+    if is_good_commit(commit_sha):
+        good_commit = commit_sha
+        break
+    offset = int(offset * 1.6)
+if good_commit is None:
+    print("Could not find a good commit.")
+    exit(1)
+subprocess.check_call(["git", "bisect", "reset"], cwd=llvm_dir)
+subprocess.check_call(
+    ["git", "bisect", "start", "--no-checkout", bad_commit, good_commit], cwd=llvm_dir
+)
 subprocess.check_call(
     [
         "git",
