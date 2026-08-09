@@ -83,5 +83,5 @@ subprocess.check_call(
         os.path.abspath(bisect_runner_file)
     ],
     cwd=llvm_dir,
-    timeout=1200.0,
+    timeout=1800.0,
 )
