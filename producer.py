@@ -45,8 +45,8 @@ def list_required_bins():
             "--reverse",
         ]
     )
-    commits = output.decode("utf-8").strip().split("\n")
-    tasks = []
+    commits = [c for c in output.decode("utf-8").strip().split("\n") if c]
+    interesting = []
     for commit in commits:
         modified_files = (
             subprocess.check_output(
@@ -65,12 +65,41 @@ def list_required_bins():
             .strip()
             .splitlines()
         )
-        for file in modified_files:
-            if any(file.startswith(prefix) for prefix in INTERESTING_DIRS):
-                tasks.append("opt-" + commit)
-                tasks.append("llc-" + commit)
-                tasks.append("lli-" + commit)
-                break
+        interesting.append(
+            any(
+                file.startswith(prefix)
+                for file in modified_files
+                for prefix in INTERESTING_DIRS
+            )
+        )
+    tasks = []
+    for i, commit in enumerate(commits):
+        if interesting[i] or (i + 1 < len(commits) and interesting[i + 1]):
+            tasks.append("opt-" + commit)
+            tasks.append("llc-" + commit)
+            tasks.append("lli-" + commit)
+    if commits and interesting[0]:
+        try:
+            parent = (
+                subprocess.check_output(
+                    [
+                        "git",
+                        "-C",
+                        LLVM_DIR,
+                        "rev-parse",
+                        commits[0] + "^",
+                    ],
+                    stderr=subprocess.DEVNULL,
+                )
+                .decode("utf-8")
+                .strip()
+            )
+        except subprocess.CalledProcessError:
+            parent = ""
+        if parent and parent not in commits:
+            tasks.append("opt-" + parent)
+            tasks.append("llc-" + parent)
+            tasks.append("lli-" + parent)
     return tasks
 
 
@@ -155,7 +184,7 @@ def main():
             time.sleep(1200)
         except Exception as e:
             print(f"Error in producer_iter: {e}", file=sys.stderr)
-            break
+            #break
 
 
 if __name__ == "__main__":
