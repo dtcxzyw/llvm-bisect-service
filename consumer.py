@@ -36,7 +36,7 @@ def manyclangs_provider(commit_id, binary, output) -> bool:
         out = subprocess.check_output([ELFSHAKER_BIN, "find", sha], cwd=MANYCLANGS_LOCAL).decode().strip()
         if out == "":
             return False
-        snapshot, pack = out.split()
+        snapshot, pack = out.splitlines()[0].split()
         subprocess.check_call([ELFSHAKER_BIN, "extract", f"{pack}:{snapshot}", "--reset"], cwd=MANYCLANGS_LOCAL)
         env = os.environ.copy()
         env["LINKSCRIPT_LLD"] = "lld"
