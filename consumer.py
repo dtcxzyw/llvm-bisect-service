@@ -16,6 +16,8 @@ def local_provider(commit_id, binary, output) -> bool:
         file_name = f"{binary}-{commit_id}"
         with open(output, "wb") as out_file:
             storage.download(file_name, out_file)
+        if os.path.getsize(output) == 0:
+            return False
         os.chmod(output, 0o755)
         return True
     except Exception:
