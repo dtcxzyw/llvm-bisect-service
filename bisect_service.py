@@ -108,7 +108,7 @@ bad_commit = (
     .strip()
 )
 if is_good_commit(bad_commit):
-    print("The test is not interesting.")
+    print("The test is not interesting.", flush=True)
     exit(1)
 bad_time = datetime.datetime.fromtimestamp(
     int(
@@ -143,7 +143,7 @@ def candidate_commits():
         for month, commit in reversed(anchors):
             yield f"anchor {month}", commit
         return
-    print("[llvm-bisect-service] Anchor list is empty; falling back to on-the-fly search.")
+    print("[llvm-bisect-service] Anchor list is empty; falling back to on-the-fly search.", flush=True)
     for months_back in range(1, MAX_MONTHS + 1):
         candidate = get_commit_before(int(months_before(bad_time, months_back).timestamp()))
         attempts = 0
@@ -161,14 +161,14 @@ good_commit = None
 for label, candidate in candidate_commits():
     if candidate == bad_commit:
         continue
-    print(f"[llvm-bisect-service] Trying {label}: {candidate}")
+    print(f"[llvm-bisect-service] Trying {label}: {candidate}", flush=True)
     if is_good_commit(candidate):
         good_commit = candidate
         break
 if good_commit is None:
-    print("Could not find a good commit.")
+    print("Could not find a good commit.", flush=True)
     exit(1)
-print(f"Bad commit: {bad_commit} Good commit: {good_commit}")
+print(f"Bad commit: {bad_commit} Good commit: {good_commit}", flush=True)
 subprocess.check_call(["git", "bisect", "reset"], cwd=llvm_dir)
 subprocess.check_call(
     ["git", "bisect", "start", "--no-checkout", bad_commit, good_commit], cwd=llvm_dir
