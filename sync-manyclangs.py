@@ -8,6 +8,54 @@ MANYCLANGS_ESI_URL = "https://github.com/elfshaker/manyclangs/releases/download/
 REMOTE_NAME = "manyclangs"
 
 
+def elfshaker_output(elfshaker: str, args: list[str], cwd: str) -> list[str]:
+    res = subprocess.run(
+        [elfshaker, *args],
+        cwd=cwd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+    if res.returncode != 0:
+        return []
+    return [line for line in res.stdout.splitlines() if line.strip()]
+
+
+def fetch_missing_packs(elfshaker: str, manyclangs_local: str) -> int:
+    packs_dir = os.path.join(manyclangs_local, "elfshaker_data", "packs")
+    fetched = 0
+    for pack in elfshaker_output(
+        elfshaker, ["list-packs", "--format", "%p"], manyclangs_local
+    ):
+        if pack.startswith("loose/"):
+            continue
+        if os.path.exists(os.path.join(packs_dir, pack + ".pack")):
+            continue
+        snapshots = elfshaker_output(
+            elfshaker, ["list", pack, "--format", "%t"], manyclangs_local
+        )
+        if not snapshots:
+            continue
+        snapshot = f"{pack}:{snapshots[-1]}"
+        files = elfshaker_output(
+            elfshaker, ["list-files", snapshot, "--format", "%b %f"], manyclangs_local
+        )
+        if not files:
+            continue
+        _, path = min(
+            files, key=lambda line: int(line.split(maxsplit=1)[0])
+        ).split(maxsplit=1)
+        print(f"Fetching {pack}.pack via elfshaker lazy load...")
+        with open(os.devnull, "wb") as devnull:
+            subprocess.check_call(
+                [elfshaker, "show", snapshot, path],
+                cwd=manyclangs_local,
+                stdout=devnull,
+            )
+        fetched += 1
+    return fetched
+
+
 def main() -> int:
     manyclangs_local = os.getenv("LBS_MANYCLANGS_LOCAL")
     if not manyclangs_local:
@@ -23,7 +71,8 @@ def main() -> int:
             f.write(f"meta\tv1\nurl\t{MANYCLANGS_ESI_URL}\n")
 
     subprocess.check_call([elfshaker, "update"], cwd=manyclangs_local)
-    print("All done!")
+    fetched = fetch_missing_packs(elfshaker, manyclangs_local)
+    print(f"All done! Fetched {fetched} missing pack(s).")
     return 0
 
 
