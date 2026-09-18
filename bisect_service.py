@@ -45,7 +45,19 @@ else
 LBS_COMMIT_SHA=$(git -C {llvm_dir} rev-parse BISECT_HEAD)
 fi
 echo "[llvm-bisect-service] Running on commit $LBS_COMMIT_SHA"
+(
 {oracle_command}
+)
+status=$?
+if [ $status -eq 0 ]; then
+result=GOOD
+elif [ $status -eq 125 ]; then
+result=SKIP
+else
+result=BAD
+fi
+echo "[llvm-bisect-service] Result on commit $LBS_COMMIT_SHA: $result (exit $status)"
+exit $status
 """)
 os.chmod(bisect_runner_file, 0o755)
 
