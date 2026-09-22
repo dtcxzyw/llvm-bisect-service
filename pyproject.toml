@@ -9,3 +9,6 @@ dependencies = [
     "fs-sshfs>=1.0.2",
     "tqdm>=4.67.1",
 ]
+
+[tool.uv]
+constraint-dependencies = ["setuptools<81"]
