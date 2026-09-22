@@ -28,7 +28,7 @@ if [ $? -ne 0 ]; then
     exit 125
 fi
 """ + oracle_command
-required_binaries = [binary for binary in ["opt", "llc", "lli"] if f"./{binary}-exec" in oracle_command]
+required_binaries = [binary for binary in ["opt", "llc", "lli", "llubi"] if f"./{binary}-exec" in oracle_command]
 for binary in required_binaries:
     oracle_command = f"""{consumer_script} $LBS_COMMIT_SHA {binary} {binary}-exec
 if [ $? -ne 0 ]; then

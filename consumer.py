@@ -10,10 +10,13 @@ warnings.filterwarnings("ignore", category=UserWarning, module="fs")
 import fs
 
 STORAGE_DIR = os.getenv("LBS_STORAGE_DIR", "./storage")
+COMMITLESS_BINARIES = {"llubi"}
+
+
 def local_provider(commit_id, binary, output) -> bool:
     try:
         storage = fs.open_fs(STORAGE_DIR, writeable=False, create=False)
-        file_name = f"{binary}-{commit_id}"
+        file_name = binary if binary in COMMITLESS_BINARIES else f"{binary}-{commit_id}"
         with open(output, "wb") as out_file:
             storage.download(file_name, out_file)
         if os.path.getsize(output) == 0:
@@ -61,7 +64,9 @@ if __name__ == "__main__":
     if local_provider(commit_id, binary, output):
         exit(0)
 
-    if manyclangs_provider(commit_id, binary, output):
+    if binary not in COMMITLESS_BINARIES and manyclangs_provider(
+        commit_id, binary, output
+    ):
         exit(0)
 
     exit(1)

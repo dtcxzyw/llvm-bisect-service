@@ -30,6 +30,9 @@ INTERESTING_DIRS = [
     "llvm/lib/Target",
 ]
 
+COMMITLESS_TARGETS = {"llubi"}
+_last_built_commits = {}
+
 
 def list_required_bins():
     cutoff = datetime.datetime.now() - datetime.timedelta(days=WINDOW_SIZE)
@@ -100,6 +103,12 @@ def list_required_bins():
             tasks.append("opt-" + parent)
             tasks.append("llc-" + parent)
             tasks.append("lli-" + parent)
+    head = (
+        subprocess.check_output(["git", "-C", LLVM_DIR, "rev-parse", "HEAD"])
+        .decode("utf-8")
+        .strip()
+    )
+    tasks.append("llubi-" + head)
     return tasks
 
 
@@ -160,10 +169,25 @@ def producer_iter():
     tasks = [name for name in requested_bins if name not in available_bins]
     progress = tqdm.tqdm(tasks)
     for name in progress:
+        target, commit = name.rsplit("-", 1)
+        if (
+            target in COMMITLESS_TARGETS
+            and _last_built_commits.get(target) == commit
+            and target in available_bins
+        ):
+            continue
         progress.set_description(f"Building {name}")
         src_bin = build_and_upload(name)
+        if target in COMMITLESS_TARGETS:
+            if os.path.getsize(src_bin) == 0:
+                continue
+            upload_name = target
+        else:
+            upload_name = name
         with open(src_bin, "rb") as bin_file:
-            storage.upload(name, bin_file)
+            storage.upload(upload_name, bin_file)
+        if target in COMMITLESS_TARGETS:
+            _last_built_commits[target] = commit
 
 
 def main():
